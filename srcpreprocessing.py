@@ -1,13 +1,12 @@
 import numpy as np
 from PIL import Image
 
-
-IMG_SIZE = (32, 32)   # CIFAR-10 model uses 32x32 images
+IMG_SIZE = (32, 32)  # CIFAR-10 model uses 32x32 images
 
 def preprocess_image(image_file):
     """
     Preprocess an uploaded image for model prediction.
-    
+
     Steps:
     - Load image
     - Resize to 32x32

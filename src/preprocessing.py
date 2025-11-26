@@ -1,6 +1,7 @@
 import numpy as np
 from PIL import Image
 
+
 IMG_SIZE = (32, 32)   # CIFAR-10 model uses 32x32 images
 
 def preprocess_image(image_file):
@@ -21,4 +22,3 @@ def preprocess_image(image_file):
     img_array = np.expand_dims(img_array, axis=0)  # shape: (1, 32, 32, 3)
 
     return img_array
-

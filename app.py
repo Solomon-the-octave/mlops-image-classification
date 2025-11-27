@@ -1,123 +1,67 @@
-import os
-import numpy as np
 import streamlit as st
-import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from tensorflow.keras.models import load_model
 
-from src.preprocessing import preprocess_image
-from src.model import (
-    load_model,
-    predict_single_image,
-    retrain_model,
-    BASE_MODEL_PATH,
-    CLASS_NAMES
-)
+# ===== MODEL & CLASSES CONFIG =====
+MODEL_PATH = "models/base_cifar10_model.h5"
 
-# -------------------------
-# STREAMLIT CONFIG
-# -------------------------
+CLASS_NAMES = [
+    "airplane", "automobile", "bird", "cat", "deer",
+    "dog", "frog", "horse", "ship", "truck"
+]
 
-st.set_page_config(
-    page_title="MLOps Image Classifier",
-    page_icon="🧠",
-    layout="wide",
-)
 
-st.title(" MLOps Image Classification System")
-st.write("""
-This demo shows:
-- Single image prediction  
-- Upload + retraining  
-- Basic insights  
-""")
-
-# Load base model
 @st.cache_resource
-def get_model():
-    return load_model(BASE_MODEL_PATH)
+def load_cifar10_model():
+    """Load the trained CIFAR-10 model once and cache it."""
+    model = load_model(MODEL_PATH)
+    return model
 
-model = get_model()
 
-tab_predict, tab_retrain, tab_insights = st.tabs(
-    [" Predict", "Retrain Model", " Insights"]
+model = load_cifar10_model()
+
+# ===== STREAMLIT UI =====
+st.set_page_config(page_title="CIFAR-10 Image Classifier", layout="centered")
+
+st.title("CIFAR-10 Image Classification Demo")
+
+st.write(
+    "This app uses a Convolutional Neural Network trained on the CIFAR-10 "
+    "dataset (32×32 colour images, 10 classes). "
+    "Upload an image and the model will predict its class."
 )
 
-# -------------------------
-# TAB 1 — PREDICTION
-# -------------------------
+# Sidebar data insights
+st.sidebar.header("Dataset Insights")
+st.sidebar.write("**Number of classes:** 10")
+st.sidebar.write("**Classes:**")
+for name in CLASS_NAMES:
+    st.sidebar.write(f"- {name}")
 
-with tab_predict:
-    st.subheader(" Predict a Single Image")
+uploaded_file = st.file_uploader(
+    "Upload an image (PNG or JPG). If it's not 32×32, I will resize it automatically.",
+    type=["png", "jpg", "jpeg"],
+)
 
-    uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
+if uploaded_file is not None:
+    # Show the uploaded image
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded image", use_column_width=True)
 
-    if uploaded_file:
-        st.image(uploaded_file, width=200)
+    # Resize to CIFAR-10 size
+    image_resized = image.resize((32, 32))
+    img_array = np.array(image_resized).astype("float32") / 255.0
+    img_batch = np.expand_dims(img_array, axis=0)  # shape (1, 32, 32, 3)
 
-        img_array = preprocess_image(uploaded_file)
-        pred_class, confidence, probs = predict_single_image(model, img_array)
+    if st.button("Predict"):
+        probs = model.predict(img_batch)[0]
+        idx = int(np.argmax(probs))
+        pred_class = CLASS_NAMES[idx]
+        confidence = float(probs[idx])
 
-        st.success(f"Predicted: **{pred_class}** ({confidence:.2f} confidence)")
+        st.success(f"Prediction: **{pred_class}** (confidence: {confidence:.2f})")
 
-        fig, ax = plt.subplots(figsize=(8, 3))
-        ax.bar(range(len(CLASS_NAMES)), probs)
-        ax.set_xticks(range(len(CLASS_NAMES)))
-        ax.set_xticklabels(CLASS_NAMES, rotation=45)
-        st.pyplot(fig)
-
-
-# -------------------------
-# TAB 2 — RETRAIN
-# -------------------------
-
-with tab_retrain:
-    st.subheader(" Upload Training Data")
-
-    class_name = st.text_input("Class name (folder name)", value="custom_class")
-
-    files = st.file_uploader(
-        "Upload multiple training images",
-        accept_multiple_files=True,
-        type=["jpg", "jpeg", "png"]
-    )
-
-    if st.button(" Save Uploaded Images"):
-        if not files:
-            st.warning("Upload at least one image.")
-        else:
-            save_dir = os.path.join("data", "train", class_name)
-            os.makedirs(save_dir, exist_ok=True)
-
-            for f in files:
-                with open(os.path.join(save_dir, f.name), "wb") as out:
-                    out.write(f.read())
-
-            st.success(f"Saved {len(files)} images to {save_dir}")
-
-    st.markdown("---")
-
-    if st.button(" Trigger Retraining"):
-        with st.spinner("Retraining model..."):
-            new_path = retrain_model()
-            st.cache_resource.clear()     # refresh model
-            model = get_model()
-
-        st.success(f"Model retrained and saved to {new_path}")
-
-
-# -------------------------
-# TAB 3 — INSIGHTS
-# -------------------------
-
-with tab_insights:
-    st.subheader(" Simple Data Insights")
-
-    st.write("Example class probability distribution:")
-
-    example_probs = np.linspace(0.05, 0.15, len(CLASS_NAMES))
-    example_probs /= example_probs.sum()
-
-    fig, ax = plt.subplots(figsize=(8, 3))
-    ax.bar(CLASS_NAMES, example_probs)
-    ax.set_title("Example Class Distribution")
-    plt.xticks(rotation=45)
-    st.pyplot(fig)
+        st.subheader("Class probabilities")
+        for i, cname in enumerate(CLASS_NAMES):
+            st.write(f"{cname}: {probs[i]:.3f}")

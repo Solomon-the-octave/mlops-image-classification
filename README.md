@@ -1,150 +1,168 @@
- CIFAR-10 Image Classification – MLOps Demo
+# CIFAR-10 Image Classification – MLOps Final Project
 
-This project is an end-to-end MLOps workflow for an image classification model trained on the CIFAR-10 dataset.
-It includes model training, evaluation, saving, and a fully deployed Streamlit web app for real-time image prediction.
+This project demonstrates a full end-to-end **MLOps workflow** using the CIFAR-10 dataset.  
+It includes:
 
-The goal of this project is to demonstrate a complete machine-learning pipeline:
-data → model training → metrics → saving the model → deployment → live predictions.
+- Data preprocessing  
+- CNN model training  
+- Evaluation using multiple metrics  
+- Model versioning  
+- Retraining with new uploaded data  
+- Deployment on Streamlit for real-time prediction  
+- Load testing using Locust  
+- A complete MLOps pipeline structure  
 
- Live Demo (Deployed on Streamlit)
+---
 
- Try the app here:
- 
+#  **Project Links**
+
+###  **GitHub Repository**
+https://github.com/Solomon-the-octave/mlops-image-classification
+
+###  **Live Deployed App (Streamlit)**
 https://mlops-image-classification-6paedubted5c9hbaja5ydz.streamlit.app/
 
-You can upload an image (PNG/JPG) and the model will classify it as one of the 10 CIFAR-10 classes:
+### **Video Demo (YouTube / Google Drive)**
+https://youtu.be/ezer2JBtxwc 
 
-airplane
+---
 
-automobile
+#  **Project Description**
 
-bird
+This MLOps project implements an image classification system using the **CIFAR-10 dataset**. The dataset contains:
 
-cat
+- 60,000 RGB images  
+- Size: 32 × 32 pixels  
+- 10 categories (Cat, Dog, Airplane, Truck, Car, etc.)
 
-deer
+The workflow includes:
 
-dog
+### **1. Model Training**
+A Convolutional Neural Network (CNN) with:
+- 3 convolutional blocks  
+- Batch normalization  
+- MaxPooling  
+- Dense layer with dropout  
+- Softmax output layer  
+- Data augmentation for robust learning  
+- EarlyStopping callback  
 
-frog
+### **2. Evaluation Metrics**
+The notebook evaluates the model using:
+- Accuracy  
+- Precision  
+- Recall  
+- F1-score  
+- Classification report  
+- Confusion matrix  
+- Training and validation curves  
 
-horse
-
-ship
-
-truck
-
- About the Model
-
-The model is a Convolutional Neural Network (CNN) trained using TensorFlow/Keras.
-Key features include:
-
-Data preprocessing and normalization
-
-Data augmentation (flip, rotation, zoom)
-
-3 convolutional blocks with BatchNorm + MaxPooling
-
-Dense classification head with Dropout
-
-Trained with EarlyStopping
-
-Exported as base_cifar10_model.h5
-
-The model achieves solid accuracy on CIFAR-10 while staying lightweight enough for fast inference.
-
- Project Structure
-mlops-image-classification/
-│
-├── app.py                 # Streamlit prediction app
-├── requirements.txt       # Packages needed for deployment
-│
-├── models/
-│   └── base_cifar10_model.h5   # Saved trained model
-│
-├── notebook/
-│   └── mlops_image.ipynb       # Full training + evaluation notebook
-│
-├── src/
-│   ├── preprocess_image.py     # Image preprocessing utilities
-│   └── prediction.py           # Prediction helper functions
-│
-└── README.md              # Project documentation
-
- Technologies Used
-
-Python
-
-TensorFlow / Keras
-
-NumPy & Matplotlib
-
-scikit-learn
-
-Streamlit
-
-GitHub for version control
-
-Streamlit Cloud for deployment
-
- How the MLOps Workflow Works
-1️ Model Training (Colab Notebook)
-
-Loaded CIFAR-10 dataset
-
-Split into train/val/test
-
-Applied data augmentation
-
-Trained a CNN model
-
-Evaluated with accuracy, precision, recall, F1-score
-
-Saved model to /models/base_cifar10_model.h5
-
-2️ Building the Streamlit App
-
-Loads the saved model
-
-Preprocesses user-uploaded images (resize → normalize → batch)
-
-Runs prediction
-
-Displays:
-
-Predicted class
-
-Confidence score
-
-Full probability distribution
-
-3️ Deployment
-
-The repo was connected to Streamlit Cloud, which automatically:
-
-Installs dependencies from requirements.txt
-
-Runs app.py
-
-Hosts a live, public demo with a clean UI
-
- Sample Prediction
-
-Upload any image, and the app will output:
-
-Prediction: automobile (confidence 0.82)
+### **3. Model Versioning**
+The trained model is exported as:
+models/base_cifar10_model.h5
+models/retrained_cifar10_model.h5
 
 
-With detailed class probabilities below it.
+### **4. Retraining Pipeline**
+The notebook simulates new incoming data:
+- Creates `new_data.npz`
+- Uploads new data via Colab  
+- Normalizes the data  
+- Retrains the existing model (fine-tuning)  
+- Saves a new version of the model
 
- Why This Project Matters
+### **5. Deployment**
+A Streamlit app is deployed using:
+- `app.py`
+- `base_cifar10_model.h5`
+- Custom prediction function  
+- Full UI for uploading images and getting predictions  
 
-This project demonstrates a complete, beginner-friendly MLOps pipeline — not just model training, but real deployment.
-It shows how to take a model from a notebook into a production-style application that anyone can use.
+Users can upload any image and receive:
+- Predicted class  
+- Confidence score  
+- Class probability breakdown  
 
-Author
+---
 
-Solomon-the-octave
-Built for an academic MLOps summative assessment.
+#  **How to Run This Project Locally**
 
-If you’d like improvements or new features (better UI, CAM heatmaps, improved model, etc.), feel free to contribute or reach out.
+## **1. Clone the repository**
+```bash
+git clone https://github.com/Solomon-the-octave/mlops-image-classification
+cd mlops-image-classification
+
+Install dependencies
+pip install -r requirements.txt
+
+Run the Streamlit app
+streamlit run app.py
+ Retraining the Model (Local or Colab)
+Step 1 — Prepare new_data.npz
+
+You can simulate new data using:
+
+x_new = x_train_full[:500]
+y_new = y_train_full[:500]
+np.savez("new_data.npz", x_new=x_new, y_new=y_new)
+
+Step 2 — Upload in Colab
+from google.colab import files
+uploaded = files.upload()
+
+Step 3 — Preprocess and Retrain
+data = np.load("new_data.npz")
+x_new = data["x_new"].astype("float32") / 255.0
+y_new = data["y_new"]
+
+model.fit(x_new, y_new, epochs=2, validation_data=(x_val, y_val))
+
+Step 4 —
+
+Save retrained model:
+
+model.save("models/retrained_cifar10_model.h5")
+
+ Load Testing (Flood Request Simulation)
+
+To evaluate model performance under load, Locust was used.
+
+Locust Command
+locust -f locustfile.py --host http://0.0.0.0:8000 --headless -u 20 -r 5 -t 30s
+
+What Was Tested
+
+Response time of the prediction endpoint
+
+Latency under increasing request traffic
+
+Throughput (requests per second)
+
+Load Test Result Summary
+
+Model inference remained stable under simulated traffic
+
+FastAPI prediction latency remained within expected bounds
+
+No server errors or timeouts were observed
+
+System handled up to 20 users with ramp-up of 5 users/second
+
+This validates that the model and API can support real-world usage.
+
+ Notebook Contents (mlops_image.ipynb)
+
+The notebook includes:
+
+✔️ Data Loading & Preprocessing
+✔️ Train/Val/Test Split
+✔️ Data Augmentation Pipeline
+✔️ Model Architecture Definition
+✔️ Training with EarlyStopping
+✔️ Accuracy, Precision, Recall, F1-score
+✔️ Confusion Matrix
+✔️ Prediction Function
+✔️ Model Saving
+✔️ new_data.npz Creation
+✔️ Upload + Preprocessing
+✔️ Retraining + Versioning

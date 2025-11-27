@@ -22,7 +22,7 @@ https://github.com/Solomon-the-octave/mlops-image-classification
 Live Deployed App (Streamlit)  
 https://mlops-image-classification-6paedubted5c9hbaja5ydz.streamlit.app/
 
-Video Demo (YouTube / Google Drive)  
+Video Demo  
 https://youtu.be/ezer2JBtxwc
 
 ---

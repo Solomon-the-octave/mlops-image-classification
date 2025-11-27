@@ -34,7 +34,7 @@ ship
 
 truck
 
-🧠 About the Model
+ About the Model
 
 The model is a Convolutional Neural Network (CNN) trained using TensorFlow/Keras.
 Key features include:
@@ -71,7 +71,7 @@ mlops-image-classification/
 │
 └── README.md              # Project documentation
 
-🛠️ Technologies Used
+ Technologies Used
 
 Python
 

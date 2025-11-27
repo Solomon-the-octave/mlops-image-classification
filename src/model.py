@@ -15,7 +15,7 @@ CLASS_NAMES = [
 def load_model(model_path: str = BASE_MODEL_PATH):
     """Load a Keras model from file."""
     if not os.path.exists(model_path):
-        raise FileNotFoundError(f"❌ Model file not found at: {model_path}")
+        raise FileNotFoundError(f" Model file not found at: {model_path}")
     print(f"Loading model from: {model_path}")
     return keras_load_model(model_path)
 
@@ -70,7 +70,7 @@ def retrain_model(
     Retrains the base model using images inside data/train/
     """
     if not os.path.exists(train_data_dir):
-        raise ValueError("❌ No training data found. Upload images first!")
+        raise ValueError(" No training data found. Upload images first!")
 
     print("Loading base model...")
     model = load_model(model_path)

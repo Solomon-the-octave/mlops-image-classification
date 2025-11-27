@@ -1,23 +1,13 @@
 import numpy as np
 from PIL import Image
 
-IMG_SIZE = (32, 32)  # CIFAR-10 model uses 32x32 images
-
-def preprocess_image(image_file):
+def preprocess_image(uploaded_file):
     """
-    Preprocess an uploaded image for model prediction.
-
-    Steps:
-    - Load image
-    - Resize to 32x32
-    - Convert to numpy array
-    - Normalize to [0,1]
-    - Add batch dimension
+    Preprocess an uploaded image for prediction.
+    Returns a numpy array of shape (1, 32, 32, 3)
     """
-    img = Image.open(image_file).convert("RGB")
-    img = img.resize(IMG_SIZE)
-
+    img = Image.open(uploaded_file).convert("RGB")
+    img = img.resize((32, 32))
     img_array = np.array(img).astype("float32") / 255.0
-    img_array = np.expand_dims(img_array, axis=0)  # shape: (1, 32, 32, 3)
-
+    img_array = np.expand_dims(img_array, axis=0)
     return img_array

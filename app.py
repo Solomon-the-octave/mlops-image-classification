@@ -8,185 +8,116 @@ from src.model import (
     load_model,
     predict_single_image,
     retrain_model,
-    BASE_MODEL_PATH
+    BASE_MODEL_PATH,
+    CLASS_NAMES
 )
 
-# ----------------- Streamlit config -----------------
+# -------------------------
+# STREAMLIT CONFIG
+# -------------------------
 
 st.set_page_config(
     page_title="MLOps Image Classifier",
     page_icon="🧠",
-    layout="wide"
+    layout="wide",
 )
 
-st.title("🧠 MLOps Image Classification Demo")
-st.write(
-    """
-    This app demonstrates an end-to-end image classification pipeline with:
-    - Model prediction
-    - Data upload for retraining
-    - Triggering a retrain of the model
-    - Basic data insights
-    """
-)
+st.title(" MLOps Image Classification System")
+st.write("""
+This demo shows:
+- Single image prediction  
+- Upload + retraining  
+- Basic insights  
+""")
 
-# CIFAR-10 class names (same as in your notebook / model.py)
-CLASS_NAMES = [
-    "airplane", "automobile", "bird", "cat", "deer",
-    "dog", "frog", "horse", "ship", "truck"
-]
-
-
+# Load base model
 @st.cache_resource
-def get_model(model_path: str = BASE_MODEL_PATH):
-    """Load and cache the trained model."""
-    model = load_model(model_path)
-    return model
-
+def get_model():
+    return load_model(BASE_MODEL_PATH)
 
 model = get_model()
 
 tab_predict, tab_retrain, tab_insights = st.tabs(
-    [" Predict", "🔁 Upload & Retrain", "📊 Insights"]
+    [" Predict", "Retrain Model", " Insights"]
 )
 
-# ----------------- TAB 1: PREDICTION -----------------
+# -------------------------
+# TAB 1 — PREDICTION
+# -------------------------
 
 with tab_predict:
     st.subheader(" Predict a Single Image")
 
-    uploaded_file = st.file_uploader(
-        "Upload an image (any object similar to CIFAR-10 classes)",
-        type=["jpg", "jpeg", "png"],
-        key="predict_uploader"
-    )
+    uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
-    if uploaded_file is not None:
-        # Show the uploaded image
-        st.image(uploaded_file, caption="Uploaded image", use_column_width=False, width=200)
+    if uploaded_file:
+        st.image(uploaded_file, width=200)
 
-        # Preprocess and predict
         img_array = preprocess_image(uploaded_file)
-        predicted_class, confidence, probs = predict_single_image(model, img_array)
+        pred_class, confidence, probs = predict_single_image(model, img_array)
 
-        st.success(f"Predicted class: **{predicted_class}**")
-        st.write(f"Confidence: **{confidence:.2f}**")
+        st.success(f"Predicted: **{pred_class}** ({confidence:.2f} confidence)")
 
-        # Probability bar chart
         fig, ax = plt.subplots(figsize=(8, 3))
         ax.bar(range(len(CLASS_NAMES)), probs)
         ax.set_xticks(range(len(CLASS_NAMES)))
         ax.set_xticklabels(CLASS_NAMES, rotation=45)
-        ax.set_ylabel("Probability")
-        ax.set_title("Class Probabilities")
         st.pyplot(fig)
-    else:
-        st.info("Please upload an image to see the prediction.")
 
 
-# ----------------- TAB 2: UPLOAD & RETRAIN -----------------
+# -------------------------
+# TAB 2 — RETRAIN
+# -------------------------
 
 with tab_retrain:
-    st.subheader("Upload New Training Data & Trigger Retrain")
+    st.subheader(" Upload Training Data")
 
-    st.write(
-        """
-        Use this section to upload new labeled images that will be used
-        to retrain the model.
-        - Choose a **class name** (e.g. `cat`, `dog`, `car`, etc.)
-        - Upload multiple images for that class.
-        """
-    )
+    class_name = st.text_input("Class name (folder name)", value="custom_class")
 
-    class_name = st.text_input(
-        "Class name for these images (will be used as folder name under `data/train/`)",
-        value="custom_class"
-    )
-
-    train_files = st.file_uploader(
-        "Upload training images for this class",
+    files = st.file_uploader(
+        "Upload multiple training images",
         accept_multiple_files=True,
-        type=["jpg", "jpeg", "png"],
-        key="retrain_uploader"
+        type=["jpg", "jpeg", "png"]
     )
-
-    save_status = st.empty()
 
     if st.button(" Save Uploaded Images"):
-        if not train_files:
-            st.warning("Please upload at least one image.")
+        if not files:
+            st.warning("Upload at least one image.")
         else:
             save_dir = os.path.join("data", "train", class_name)
             os.makedirs(save_dir, exist_ok=True)
 
-            saved_paths = []
-            for f in train_files:
-                dest_path = os.path.join(save_dir, f.name)
-                with open(dest_path, "wb") as out_file:
-                    out_file.write(f.read())
-                saved_paths.append(dest_path)
+            for f in files:
+                with open(os.path.join(save_dir, f.name), "wb") as out:
+                    out.write(f.read())
 
-            save_status.success(
-                f"Saved {len(saved_paths)} images to `{save_dir}`. These will be used for retraining."
-            )
+            st.success(f"Saved {len(files)} images to {save_dir}")
 
     st.markdown("---")
 
-    st.write(
-        """
-        After uploading and saving images into the `data/train/` directory,
-        you can trigger a retrain of the model.
-        """
-    )
+    if st.button(" Trigger Retraining"):
+        with st.spinner("Retraining model..."):
+            new_path = retrain_model()
+            st.cache_resource.clear()     # refresh model
+            model = get_model()
 
-    if st.button(" Trigger Model Retraining"):
-        with st.spinner("Retraining model on data in `data/train/`..."):
-            new_model_path = retrain_model(
-                model_path=BASE_MODEL_PATH,
-                train_data_dir="data/train",
-                output_model_path="models/base_cifar10_model_retrained.h5",
-                epochs=3,
-                batch_size=32
-            )
-            # Reload cached model
-            st.cache_resource.clear()
-            updated_model = get_model(new_model_path)
-
-        st.success(f"Retraining complete! New model saved at `{new_model_path}`.")
+        st.success(f"Model retrained and saved to {new_path}")
 
 
-# ----------------- TAB 3: INSIGHTS -----------------
+# -------------------------
+# TAB 3 — INSIGHTS
+# -------------------------
 
 with tab_insights:
-    st.subheader(" Dataset & Prediction Insights")
+    st.subheader(" Simple Data Insights")
 
-    st.write(
-        """
-        Below are some simple insights based on the model's classes.
-        In your video / report you can explain:
-        - How the model behaves on different classes
-        - Which classes might be harder/easier
-        - Any class imbalance in your training data (if you add your own images)
-        """
-    )
+    st.write("Example class probability distribution:")
 
-    # Simple static distribution for demonstration purposes
-    st.write("### Example: Class Index vs. Example Probability Distribution")
+    example_probs = np.linspace(0.05, 0.15, len(CLASS_NAMES))
+    example_probs /= example_probs.sum()
 
-    example_probs = np.linspace(0.05, 0.15, num=len(CLASS_NAMES))
-    example_probs = example_probs / example_probs.sum()  # normalize
-
-    fig2, ax2 = plt.subplots(figsize=(8, 3))
-    ax2.bar(CLASS_NAMES, example_probs)
-    ax2.set_ylabel("Relative Importance (example)")
-    ax2.set_title("Example distribution across classes")
+    fig, ax = plt.subplots(figsize=(8, 3))
+    ax.bar(CLASS_NAMES, example_probs)
+    ax.set_title("Example Class Distribution")
     plt.xticks(rotation=45)
-    st.pyplot(fig2)
-
-    st.info(
-        """
-        You can later replace this with real insights, e.g.:
-        - Number of images per class in `data/train/`
-        - Average prediction confidence per class on a test batch
-        """
-    )
+    st.pyplot(fig)
